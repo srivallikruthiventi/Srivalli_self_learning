@@ -1,0 +1,201 @@
+#Code for final-Python for Genomic Data Science Johns Hopkins University
+
+#regex used below is an implementation which is compatible with the standard re module and offers additional functionality-imported to experiment
+#regex module available in https://pypi.org/project/regex/
+
+PART 1-Number of sequences and lengths of sequences
+
+#To find the number of records in the FASTA file
+
+from Bio import SeqIO
+import re
+import regex
+
+fasta_file_path='data/dna2.fasta'
+records = SeqIO.index(fasta_file_path,"fasta")
+print(len(records))
+
+#To find lengths of shortest and longest sequences
+length_of_seq=[]
+for key,value in records.items():
+    length_of_seq.append(len(value.seq))
+print("Length of longest sequence is: ",max(length_of_seq))
+print("Length of shortest sequence is: ",min(length_of_seq))
+
+#Alternatively, a list comprehension can be used to populate the list with lengths of the sequences
+# List comprehension- length_of_seq=[len(value.seq) for key,value in records.items()]
+# Time taken by the for loop is 2.07 ms ± 631 µs per loop (mean ± std. dev. of 7 runs, 1000 loops each)
+# Time taken by the list comprehension is 2.21 ms ± 1.07 ms per loop (mean ± std. dev. of 7 runs, 1000 loops each)
+
+
+#To find the length of longest ORF in a given reading frame in any of the sequences
+#To find the length of longest ORF in a given reading frame along with its starting position
+
+PART 2-Open Reading Frames
+
+#ORFs in forward strand are considered 
+#As per given exam guidelines, start codon is "ATG" and stop codons are "TAA, TAG or TGA"
+#The following function was used to find open reading frames in a particular sequence in a given reading frame
+def orf_finder(s1,reading_frame):
+    orf_start_pos=[]
+    length_orf=[]
+
+    r1=re.finditer("(ATG)",s1)
+    s_pos=[m1.start() for m1 in r1 if (m1.start())%3==0]
+
+    r2=re.finditer("(TAA|TAG|TGA)",s1)
+    st_pos=[m2.start() for m2 in r2 if (m2.start())%3==0]
+
+    for start1 in range(0,len(s_pos)):
+        #print("\nstart1",s_pos[start1])
+        count=0
+        for stop1 in range(0,len(st_pos)):
+            #print("stop1:",st_pos[stop1])
+            if s_pos[start1]<st_pos[stop1] and count==0:
+                orf=s1[s_pos[start1]:st_pos[stop1]+3]
+                #print("\ns_pos[start1]",s_pos[start1])
+                #print("orf:",orf)
+                #print("length of orf:",len(orf))
+                length_orf.append(len(orf))
+                #if s_pos[start1] not in s_pos:
+                orf_start_pos.append(s_pos[start1])
+                count+=1
+            
+    if len(length_orf)==0:
+        orf_length_max=0
+        start_pos=-1
+    else:
+        orf_length_max=max(length_orf)  
+        start_pos=orf_start_pos[length_orf.index(max(length_orf))]+reading_frame+1
+    
+
+    return orf_length_max,start_pos
+
+#The following is to find all open reading frames in all sequences and reading frames of a multi FASTA file using the previous function orf_finder
+max_length_orf0=[]
+starting_pos_orf0=[]
+max_length_orf1=[]
+starting_pos_orf1=[]
+max_length_orf2=[]
+starting_pos_orf2=[]
+
+for key,value in records.items():
+    for strand, nuc in [(+1, value.seq)]:
+        for reading_frame in range(3):
+            length = 3 * ((len(value.seq)-reading_frame) // 3)
+            frame=str(nuc[reading_frame:reading_frame+length])
+            max_length_orf,starting_pos_orf=orf_finder(frame,reading_frame)
+            
+            if reading_frame==0:
+                max_length_orf0.append(max_length_orf)
+                starting_pos_orf0.append(starting_pos_orf)
+                
+            if reading_frame==1:
+                max_length_orf1.append(max_length_orf)
+                starting_pos_orf1.append(starting_pos_orf)
+                
+            if reading_frame==2:
+                max_length_orf2.append(max_length_orf)
+                starting_pos_orf2.append(starting_pos_orf)
+                
+print("max in 0:",max(max_length_orf0),starting_pos_orf0[max_length_orf0.index(max(max_length_orf0))])
+print("----------------------------------------------------")
+print("max in 1:",max(max_length_orf1),starting_pos_orf1[max_length_orf1.index(max(max_length_orf1))])
+print("----------------------------------------------------")
+print("max in 2:",max(max_length_orf2),starting_pos_orf2[max_length_orf2.index(max(max_length_orf2))])
+#The start positions of the ORFs printed here indicate the character number and not the index number
+
+#To find length of the longest forward ORF that appears in sequence with the id "gi|142022655|gb|EQ086233.1|16"
+
+for key,value in records.items():
+    if value.id=="gi|142022655|gb|EQ086233.1|16":
+        for strand, nuc in [(+1, value.seq)]:
+            for reading_frame in range(3):
+                length = 3 * ((len(value.seq)-reading_frame) // 3)
+                frame=str(nuc[reading_frame:reading_frame+length])
+                
+                if reading_frame==0:
+                    max_length_orf_id0,starting_pos_orf_id0=orf_finder(frame,reading_frame)
+
+                if reading_frame==1:
+                    max_length_orf_id1,starting_pos_orf_id1=orf_finder(frame,reading_frame)
+
+                if reading_frame==2:
+                    max_length_orf_id2,starting_pos_orf_id2=orf_finder(frame,reading_frame)
+
+            
+print("0:",max_length_orf_id0,starting_pos_orf_id0)
+print("----------------------------------------------------")
+print("1:",max_length_orf_id1,starting_pos_orf_id1) 
+print("----------------------------------------------------")
+print("2:",max_length_orf_id2,starting_pos_orf_id2)
+print("----------------------------------------------------")
+print("Max in all reading frames is:",max(max_length_orf_id0,max_length_orf_id1,max_length_orf_id2))
+
+
+PART 3- kmers in sequences
+
+#To find the most frequently occuring repeat of a given length and to find how many times it occurs
+#To find which kmers and how many kmers have maximum occurences
+
+#PatternCount function returns the number of times a Pattern(kmer) occurs in Text(sequence)
+def PatternCount(Text, Pattern):
+    count=0
+    for i in range(len(Text)-1):
+        if Text[i:i+len(Pattern)]==Pattern:
+            count+=1
+    return count
+
+#FrequentWords function returns the most frequent kmers occuring in Text(sequence)
+#The function returns l-list of kmers occuring maximum times in Text,p-list of kmers occuring in the text,counts-list of counts of kmers in text
+def FrequentWords(Text, k):
+    p=[]
+    l=[]
+    counts=[]
+    for i in range(0,len(Text)-1):
+        Pattern=Text[i:i+k]
+        if len(Pattern)==k:
+            if Pattern not in p:
+                p.append(Pattern)
+                count=PatternCount(Text,Pattern)
+                counts.append(count)
+        i+=1
+    arr=dict(zip(p,counts))
+    maxcount=max(counts)
+    for i in range(0,len(counts)):
+        if counts[i]==maxcount:
+            l.append(p[i])
+    return l,maxcount,p,counts
+    
+#The following code gives a list of all kmers occuring in all sequences in the multi FASTA file along with their counts
+all_p=[]
+all_counts=[]
+for key,value in records.items():
+    freqwords,maxcount,p,counts=FrequentWords(str(value.seq),12)
+    for p1 in p:
+        all_p.append(p1)
+    for c1 in counts:
+        all_counts.append(c1)
+    
+all_kmers_counts_list=list(zip(all_p,all_counts))
+
+#The following code gives a list of unique kmers in the previous list
+distinct_kmers=list(set(all_p))
+
+#The following code compares the list of unique kmers with list of all kmers occuring to give a count
+total_distinct_count={}
+for kmers in all_kmers_counts_list:
+    for kmer in distinct_kmers:
+        if str(kmers[0])==str(kmer) and kmers[0] not in total_distinct_count.keys():
+            total_distinct_count[kmers[0]]=kmers[1]
+        elif str(kmers[0])==str(kmer) and kmers[0] in total_distinct_count.keys():
+            total_distinct_count[kmers[0]]+=kmers[1]
+            
+all_kmers_values=list(total_distinct_count.values())
+
+#The following code gives a list of kmers with the maximum length occuring in all sequences 
+kmers_with_max_length=[]
+for value1,value2 in total_distinct_count.items():
+    if value2==max(all_kmers_values):
+        kmers_with_max_length.append(value1)
+print(kmers_with_max_length)
