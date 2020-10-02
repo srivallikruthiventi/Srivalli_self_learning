@@ -47,17 +47,11 @@ def orf_finder(s1,reading_frame):
     st_pos=[m2.start() for m2 in r2 if (m2.start())%3==0]
 
     for start1 in range(0,len(s_pos)):
-        #print("\nstart1",s_pos[start1])
         count=0
         for stop1 in range(0,len(st_pos)):
-            #print("stop1:",st_pos[stop1])
             if s_pos[start1]<st_pos[stop1] and count==0:
                 orf=s1[s_pos[start1]:st_pos[stop1]+3]
-                #print("\ns_pos[start1]",s_pos[start1])
-                #print("orf:",orf)
-                #print("length of orf:",len(orf))
                 length_orf.append(len(orf))
-                #if s_pos[start1] not in s_pos:
                 orf_start_pos.append(s_pos[start1])
                 count+=1
             
