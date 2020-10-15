@@ -1,4 +1,7 @@
 #Code for final-Python for Genomic Data Science Johns Hopkins University
+#Python version 3.8.3
+#Biopython version 1.78
+
 
 from Bio import SeqIO
 import re
