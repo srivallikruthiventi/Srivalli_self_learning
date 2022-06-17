@@ -1,2 +1,2 @@
-# bioinformatics-DS-self
-This repository contains the files and codes for bioinformatics and data science(self learning/coursera).
+# Srivalli Kruthiventi: Self Learning
+This repository contains some of the files and codes that Srivalli Kruthiventi has written.
